@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import fs from 'fs';
+import os from 'os';
 import { get } from 'https';
 import {resolve} from 'path';
 var nodeConsole = require('console');
@@ -46,7 +47,35 @@ function combineDocuments(content:string){
             
         }
     }while(index!=-1);
-
+return content;
+    
+    
+  }
+  function findDifficultSentences(content:string){
+    let splitted=content.split(".");
+    let sentencesWithScore:{sentence:string,score:number}[]=[]
+    let ignore=["\\item","\\hline","\\lstdefinelanguage{","\\label","\\usepackage"]
+    for(let s of splitted){
+        if(ignore.some((it)=>s.includes(it))){
+            continue;
+        }
+        let whiteSpaceSplit=s.split(" ");
+        let numberWords=whiteSpaceSplit.length;
+        let numberLetters=0;
+        for(let c of s){
+            if(c.match(/[a-zA-Z]/)){
+                numberLetters++;
+            }
+        }
+        sentencesWithScore.push({sentence:s,score:numberLetters+numberWords})
+    }
+    let sorted=sentencesWithScore.sort((a,b)=>b.score-a.score);
+    for(let i=0;i<10;i++){
+        myConsole.log(sorted[i].sentence,sorted[i].score)
+        myConsole.log("################################################################")
+    }
+  }
+  function createHTML(content:string){
     let splitted=content.split(/\.|\n\n/)
     let thesis=document.getElementById("thesis")!;
     for(let s of splitted){
@@ -81,12 +110,15 @@ function combineDocuments(content:string){
         
         thesis.appendChild(div);
     }
-    
   }
+let basePath="/home/compf/data/uni/master/sem4/schriftlich/master-thesis-report/masterthesis"
+if(os.platform()=="win32"){
+    basePath="D:\\uni\\master\\master-thesis-report\\masterthesis"
+}
 window.addEventListener('DOMContentLoaded', () => {
-combineDocuments(fs.readFileSync("/home/compf/data/uni/master/sem4/schriftlich/master-thesis-report/masterthesis/main.tex").toString());
-
+let content=combineDocuments(fs.readFileSync(resolve(basePath,"main.tex")).toString());
+fs.writeFileSync("main2.text",content);
+findDifficultSentences(content)
  
    
   });
-let basePath="/home/compf/data/uni/master/sem4/schriftlich/master-thesis-report/masterthesis"
